@@ -3,9 +3,6 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "bunx rork start -p dpil4agay67e0yxo4stsd --tunnel",
-    "start-web": "bunx rork start -p dpil4agay67e0yxo4stsd --web --tunnel",
-    "start-web-dev": "DEBUG=expo* bunx rork start -p dpil4agay67e0yxo4stsd --web --tunnel"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
