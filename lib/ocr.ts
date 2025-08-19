@@ -17,7 +17,7 @@ interface BarcodeAIResult {
   error?: string;
 }
 
-const ai = new GoogleGenerativeAI("AIzaSyDalwIkVFjCgxl28h0THFblV6ejU5GBKwY");
+const ai = new GoogleGenerativeAI("");
 
 export async function processReceiptImage(base64Image: string): Promise<OCRResult> {
   try {
@@ -209,3 +209,4 @@ export function parseReceiptItems(text: string): string[] {
     })
     .filter((item) => item.length > 0);
 }
+
