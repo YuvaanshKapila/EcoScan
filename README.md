@@ -17,25 +17,18 @@ Qr Code Download for APK
 
 
 
-
-# Expo Scan
-
-**Expo Scan** is a React Native app that lets users scan barcodes or receipts to get sustainability insights. The app analyzes product data, calculates environmental impact, and suggests eco-friendly alternatives.
-
 ## Features
 
 - Barcode & receipt scanning with Expo Camera
-- AI-powered sustainability scoring using Google Generative AI and Gemini
+- AI-powered sustainability scoring using Gemini
 - Suggestions for eco-friendly alternatives
-- User authentication & storage via Supabase
-- Custom parsing system for accurate product & receipt data
+- User authentication with Supabase
 
 ## Tech Stack
 
-- **Frontend:** React Native (TypeScript), Expo
-- **Backend & Database:** Supabase
-- **AI & Analysis:** Google Generative AI, Gemini
-- **Local Storage:** AsyncStorage
+- Frontend: React Native (TypeScript), Expo
+- Backend & Database: Supabase
+- AI & Analysis: Gemini
 
 ## Data Models
 
@@ -84,7 +77,7 @@ Register or login via Supabase
 
 Scan barcodes or receipts
 
-View sustainability insights and alternative suggestions
+View sustainability insights and  suggestions
 
 Scans are stored in Supabase for tracking
 
