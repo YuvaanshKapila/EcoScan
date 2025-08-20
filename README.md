@@ -85,3 +85,11 @@ Scan barcodes or receipts
 View sustainability insights and alternative suggestions
 
 Scans are stored in Supabase for tracking
+
+## Transparency
+- Used AI for styling components like button input, etc, but created the scan result card mainly independently
+- Open Food Facts implementation used AI for it
+- Config files used AI
+- Formatters and generation of the local stuff so Gemini doesn't be totality relied on it (not that bad, as that is not code but just some suggestions)
+- Gemini prompts
+- **NOT 30 PERCENT OF MY CODE, HOWEVER**
