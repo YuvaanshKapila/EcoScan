@@ -3,6 +3,8 @@ EcoScan is an open-source mobile app designed for consumers that are unhealthy e
 
 **WILL NOT WORK ON IOS YET...**
 
+## ** PLEASE KEEP IN MIND IF SCAN DOESNT WORK FOR RECEIPT PLEASE UPLOAD(should work but just in case) AND IF UPLOAD DOESNT WORK FOR BARCODE USE MANUAL(again should work but just in case) **
+
 https://drive.google.com/file/d/1JDjZIYxFX6DVbBGRpW4MpkUml14uX4kR/view?usp=sharing
 
 Qr Code Download for APK 
