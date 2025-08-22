@@ -19,7 +19,7 @@ export default function BarcodeScreen() {
   const cameraRef = useRef<any>(null);
   const [torch, setTorch] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(true);
-  const { setNewScanResult } = useScan();
+  const { setNewScanResult, uploadImage } = useScan();
   const [isDecoding, setIsDecoding] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [lastScannedCode, setLastScannedCode] = useState<string>('');
@@ -98,49 +98,77 @@ export default function BarcodeScreen() {
   }, [manualCode, handleLookup]);
 
   const pickImageAndDecode = useCallback(async () => {
+    if (isDecoding || isProcessing) return;
+    
     try {
       setIsDecoding(true);
+      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 1,
+        quality: 0.8,
         base64: true,
       });
 
-      if (result.canceled) {
+      if (result.canceled || !result.assets || result.assets.length === 0) {
         setIsDecoding(false);
         return;
       }
 
-      const asset = result.assets?.[0];
-      if (!asset) {
-        throw new Error('No image selected');
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Error', 'Could not process the selected image.');
+        setIsDecoding(false);
+        return;
       }
-
-      if (asset.base64) {
-        try {
-          const ocrResult = await processReceiptImage(asset.base64);
-          if (ocrResult.success && ocrResult.items && ocrResult.items.length > 0) {
-            const { matchedItems, totalScore } = calculateSustainabilityScore(ocrResult.items);
-            const scan = setNewScanResult(matchedItems, totalScore, ocrResult.storeName, `Receipt processed: ${ocrResult.items.length} items found`);
-            if (scan) {
-              router.push(`/result?id=${scan.id}`);
-            }
-          } else {
-            Alert.alert('No items found', 'Could not extract product information from the image. Try a clearer image or manual input.');
+      
+      try {
+        const ocrResult = await processReceiptImage(asset.base64);
+        
+        if (ocrResult.success && ocrResult.items && ocrResult.items.length > 0) {
+          let imageUrl: string | undefined;
+          try {
+            const uploadResult = await uploadImage(asset.base64);
+            imageUrl = uploadResult || undefined;
+          } catch (uploadError) {
+            console.warn('Image upload failed, proceeding without image URL:', uploadError);
           }
-        } catch (ocrError) {
-          console.error('OCR failed:', ocrError);
-          Alert.alert('Processing failed', 'Could not process the image. Try manual input or live scanning.');
+
+          const { matchedItems, totalScore } = calculateSustainabilityScore(ocrResult.items);
+          
+          const feedback = [
+            ocrResult.storeName ? `Store: ${ocrResult.storeName}` : undefined,
+            `Receipt processed: ${ocrResult.items.length} items found`,
+            ocrResult.items.length > 0 ? `Items: ${ocrResult.items.slice(0, 5).join(', ')}${ocrResult.items.length > 5 ? '...' : ''}` : undefined
+          ].filter(Boolean).join('\n');
+
+          const scan = setNewScanResult(matchedItems, totalScore, imageUrl, feedback);
+          
+          if (scan) {
+            router.push(`/result?id=${scan.id}`);
+          } else {
+            throw new Error('Failed to create scan result');
+          }
+        } else {
+          Alert.alert(
+            'No items found', 
+            'Could not extract product information from the image. Please try:\n• A clearer image\n• Better lighting\n• Manual barcode scanning'
+          );
         }
+      } catch (ocrError) {
+        console.error('OCR processing failed:', ocrError);
+        Alert.alert(
+          'Processing failed', 
+          'Could not process the receipt image. Please try:\n• A different image\n• Manual barcode scanning\n• Live camera scanning'
+        );
       }
-    } catch (e) {
-      console.error('Image decode failed', e);
-      Alert.alert('Upload failed', 'Could not process the image. Try manual input or live scanning.');
+    } catch (error) {
+      console.error('Image selection failed:', error);
+      Alert.alert('Upload failed', 'Could not access the image. Please try again.');
     } finally {
       setIsDecoding(false);
     }
-  }, [setNewScanResult]);
+  }, [setNewScanResult, uploadImage, isDecoding, isProcessing]);
 
   if (!permission) {
     return (
@@ -234,10 +262,12 @@ export default function BarcodeScreen() {
         </TouchableOpacity>
       </View>
       
-      {isProcessing && (
+      {(isProcessing || isDecoding) && (
         <View style={styles.processingOverlay}>
           <ActivityIndicator size="large" color={Colors.light.primary} />
-          <Text style={styles.processingText}>Processing barcode...</Text>
+          <Text style={styles.processingText}>
+            {isDecoding ? 'Processing image...' : 'Processing barcode...'}
+          </Text>
         </View>
       )}
 
