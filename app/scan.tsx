@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, ComponentProps } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Image,
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TouchableOpacity, 
+  Image, 
   ActivityIndicator,
   Alert,
   Platform
@@ -14,18 +14,11 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/hooks/auth-store';
 import { useScan } from '@/hooks/scan-store';
-import { processReceiptImage, getSustainabilityFeedback } from '@/lib/ocr';
+import { processReceiptImage, getSustainabilityFeedback, getStoreRecommendationsForItems } from '@/lib/ocr';
 import { calculateSustainabilityScore } from '@/data/sustainabilityData';
 import Colors from '@/constants/colors';
 import Button from '@/components/Button';
-
 import { Ionicons } from '@expo/vector-icons';
-
-type IoniconsIconProps = Omit<ComponentProps<typeof Ionicons>, 'name'>;
-
-const CameraIcon = (props: IoniconsIconProps) => <Ionicons name="camera-outline" {...props} />;
-const ImageIcon = (props: IoniconsIconProps) => <Ionicons name="image-outline" {...props} />;
-
 
 export default function ScanScreen() {
   const { user } = useAuth();
@@ -36,36 +29,36 @@ export default function ScanScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<string>('');
   const cameraRef = useRef<any>(null);
-
+  
   useEffect(() => {
     if (!user) {
       router.replace('/auth/login');
     }
   }, [user]);
-
+  
   useEffect(() => {
     const requestPermissions = async () => {
       await requestCameraPermission();
     };
     requestPermissions();
   }, [requestCameraPermission]);
-
+  
   const takePicture = async () => {
     if (!cameraRef.current) return;
-
+    
     try {
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
         base64: true,
       });
-
+      
       setCapturedImage(photo.uri);
     } catch (error) {
       console.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture. Please try again.');
     }
   };
-
+  
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -75,7 +68,7 @@ export default function ScanScreen() {
         quality: 0.8,
         base64: true,
       });
-
+      
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setCapturedImage(result.assets[0].uri);
       }
@@ -84,25 +77,25 @@ export default function ScanScreen() {
       Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
-
+  
   const resetImage = () => {
     setCapturedImage(null);
   };
-
+  
   const processReceipt = async () => {
     if (!capturedImage || !user) return;
-
+    
     try {
       setIsProcessing(true);
-
+      
       setProcessingStep('Preparing image...');
       let base64Image = '';
-
+      
       if (Platform.OS === 'web') {
         const response = await fetch(capturedImage);
         const blob = await response.blob();
         const reader = new FileReader();
-
+        
         base64Image = await new Promise((resolve) => {
           reader.onloadend = () => {
             if (typeof reader.result === 'string') {
@@ -114,7 +107,7 @@ export default function ScanScreen() {
       } else {
         const response = await fetch(capturedImage);
         const blob = await response.blob();
-
+        
         const fileReaderInstance = new FileReader();
         base64Image = await new Promise((resolve) => {
           fileReaderInstance.onload = () => {
@@ -124,21 +117,21 @@ export default function ScanScreen() {
           fileReaderInstance.readAsDataURL(blob);
         });
       }
-
+      
       setProcessingStep('Uploading image...');
       const imageUrl = await uploadImage(base64Image);
-
+      
       setProcessingStep('Analyzing receipt with AI...');
       const ocrResult = await processReceiptImage(base64Image);
-
+      
       if (!ocrResult.success) {
         throw new Error(ocrResult.error || 'OCR processing failed');
       }
-
+      
       console.log('OCR Result:', ocrResult);
       const items = ocrResult.items || [];
       console.log('Extracted items:', items);
-
+      
       if (items.length === 0) {
         Alert.alert(
           'No Items Found',
@@ -147,17 +140,27 @@ export default function ScanScreen() {
         );
         return;
       }
-
+      
       setProcessingStep('Calculating sustainability score...');
       const { matchedItems, totalScore } = calculateSustainabilityScore(items);
       console.log('Matched items:', matchedItems);
       console.log('Total score:', totalScore);
-
+      
+      setProcessingStep('Finding nearby eco-friendly stores...');
+      const storeRecommendations = await getStoreRecommendationsForItems(items);
+      
       setProcessingStep('Getting sustainability feedback...');
       const feedback = await getSustainabilityFeedback(items);
-
-      const scanResult = setNewScanResult(matchedItems, totalScore, imageUrl || undefined, feedback);
-
+      
+      const scanResult = setNewScanResult(
+        matchedItems, 
+        totalScore, 
+        imageUrl || undefined, 
+        feedback,
+        storeRecommendations.success ? storeRecommendations.stores : undefined,
+        storeRecommendations.success ? storeRecommendations.userLocation : undefined
+      );
+      
       if (scanResult) {
         router.push(`/result?id=${scanResult.id}`);
       } else {
@@ -175,7 +178,7 @@ export default function ScanScreen() {
       setProcessingStep('');
     }
   };
-
+  
   if (!cameraPermission) {
     return (
       <View style={styles.permissionContainer}>
@@ -183,7 +186,7 @@ export default function ScanScreen() {
       </View>
     );
   }
-
+  
   if (!cameraPermission.granted) {
     return (
       <View style={styles.permissionContainer}>
@@ -199,7 +202,7 @@ export default function ScanScreen() {
       </View>
     );
   }
-
+  
   if (isProcessing) {
     return (
       <View style={styles.processingContainer}>
@@ -208,13 +211,13 @@ export default function ScanScreen() {
       </View>
     );
   }
-
+  
   return (
     <View style={styles.container}>
       {capturedImage ? (
         <View style={styles.previewContainer}>
           <Image source={{ uri: capturedImage }} style={styles.previewImage} />
-
+          
           <View style={styles.previewActions}>
             <Button
               title="Scan Again"
@@ -245,16 +248,16 @@ export default function ScanScreen() {
               </Text>
             </View>
           </CameraView>
-
+          
           <View style={styles.controlsContainer}>
             <TouchableOpacity
               style={styles.galleryButton}
               onPress={pickImage}
               testID="gallery-button"
             >
-              <ImageIcon size={24} color={Colors.light.text} />
+              <Ionicons name="image" size={24} color={Colors.light.text} />
             </TouchableOpacity>
-
+            
             <TouchableOpacity
               style={styles.captureButton}
               onPress={takePicture}
@@ -262,13 +265,13 @@ export default function ScanScreen() {
             >
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
-
+            
             <TouchableOpacity
               style={styles.flipButton}
               onPress={() => setFacing(current => (current === 'back' ? 'front' : 'back'))}
               testID="flip-button"
             >
-              <CameraIcon size={24} color={Colors.light.text} />
+              <Ionicons name="camera-reverse" size={24} color={Colors.light.text} />
             </TouchableOpacity>
           </View>
         </>
