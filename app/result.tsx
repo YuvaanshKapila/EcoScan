@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Image,
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  ScrollView, 
+  Image, 
   ActivityIndicator,
   Alert,
   Share
@@ -18,63 +18,52 @@ import Button from '@/components/Button';
 import SustainabilityScore from '@/components/SustainabilityScore';
 import { formatDateTime } from '@/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
-import { ComponentProps } from 'react';
-
-// Use a type for props that excludes the 'name' property
-type IoniconsIconProps = Omit<ComponentProps<typeof Ionicons>, 'name'>;
-
-// Create aliases for the icons using Ionicons with the correct names
-const Leaf = (props: IoniconsIconProps) => <Ionicons name="leaf-outline" {...props} />;
-const AlertTriangle = (props: IoniconsIconProps) => <Ionicons name="warning-outline" {...props} />;
-const CheckCircle2 = (props: IoniconsIconProps) => <Ionicons name="checkmark-circle-outline" {...props} />;
+import NearbyStores from '@/components/NearbyStores';
 
 export default function ResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const {
-    scanHistory,
-    currentScan,
-    saveCurrentScan,
-    isSaving
+  const { 
+    scanHistory, 
+    currentScan, 
+    saveCurrentScan, 
+    isSaving 
   } = useScan();
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [isSaved, setIsSaved] = useState(false);
-
+  
   useEffect(() => {
     if (!user) {
       router.replace('/auth/login');
       return;
     }
-
+    
     if (!id) {
       router.back();
       return;
     }
-
-    // Check if this is the current scan
+    
     if (currentScan && currentScan.id === id) {
       setScan(currentScan);
       setIsSaved(false);
       return;
     }
-
-    // Check if this is a saved scan from history
+    
     const historyScan = scanHistory.find((s: ScanResult) => s.id === id);
     if (historyScan) {
       setScan(historyScan);
       setIsSaved(true);
       return;
     }
-
-    // If not found, go back
+    
     Alert.alert('Error', 'Scan result not found');
     router.back();
   }, [id, currentScan, scanHistory, user]);
-
+  
   const handleSave = async () => {
     try {
       if (!currentScan) return;
-
+      
       const savedScan = await saveCurrentScan();
       if (savedScan) {
         setIsSaved(true);
@@ -85,15 +74,15 @@ export default function ResultScreen() {
       Alert.alert('Error', 'Failed to save scan. Please try again.');
     }
   };
-
+  
   const handleShare = async () => {
     if (!scan) return;
-
+    
     try {
       const message = `My EcoScan Sustainability Score: ${scan.totalScore}/100\n\n` +
         `Items scanned:\n${scan.items.map(item => `• ${item.name} (${item.impact} impact)`).join('\n')}\n\n` +
         'Scanned with EcoScan - Make sustainable shopping choices!';
-
+      
       await Share.share({
         message,
         title: 'My EcoScan Results',
@@ -102,11 +91,11 @@ export default function ResultScreen() {
       console.error('Error sharing:', error);
     }
   };
-
+  
   const handleScanAgain = () => {
     router.push('/scan');
   };
-
+  
   if (!scan) {
     return (
       <View style={styles.loadingContainer}>
@@ -115,7 +104,7 @@ export default function ResultScreen() {
       </View>
     );
   }
-
+  
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'low':
@@ -128,75 +117,73 @@ export default function ResultScreen() {
         return Colors.light.gray;
     }
   };
-
+  
   const renderItemRow = (item: ScannedItem, index: number) => (
     <View key={index} style={styles.itemRow}>
       <View style={styles.itemNameContainer}>
-        <View
+        <View 
           style={[
-            styles.impactIndicator,
+            styles.impactIndicator, 
             { backgroundColor: getImpactColor(item.impact) }
-          ]}
+          ]} 
         />
         <Text style={styles.itemName}>{item.name}</Text>
       </View>
-
+      
       <View style={styles.itemScoreContainer}>
         <Text style={styles.itemScore}>{item.score}</Text>
       </View>
     </View>
   );
-
-  // Group items by impact
+  
   const highImpactItems = scan.items.filter(item => item.impact === 'high');
   const mediumImpactItems = scan.items.filter(item => item.impact === 'medium');
   const lowImpactItems = scan.items.filter(item => item.impact === 'low');
-
-  // Get alternatives for high impact items
+  
   const alternatives = highImpactItems
     .filter(item => item.alternatives && item.alternatives.length > 0)
     .map(item => ({
       name: item.name,
       alternatives: item.alternatives
     }));
-
+  
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>Scan Results</Text>
         <Text style={styles.timestamp}>{formatDateTime(scan.createdAt)}</Text>
       </View>
-
+      
       <View style={styles.scoreCard}>
         <SustainabilityScore score={scan.totalScore} size="large" />
-
+        
         <View style={styles.scoreBreakdown}>
           <Text style={styles.scoreBreakdownTitle}>Score Breakdown</Text>
-
+          
           <View style={styles.breakdownItem}>
             <View style={styles.breakdownIndicator}>
-              <View
-                style={[styles.indicatorDot, { backgroundColor: Colors.light.error }]}
+              <View 
+                style={[styles.indicatorDot, { backgroundColor: Colors.light.error }]} 
               />
               <Text style={styles.breakdownLabel}>High Impact</Text>
             </View>
             <Text style={styles.breakdownValue}>{highImpactItems.length} items</Text>
           </View>
-
+          
           <View style={styles.breakdownItem}>
             <View style={styles.breakdownIndicator}>
-              <View
-                style={[styles.indicatorDot, { backgroundColor: Colors.light.warning }]}
+              <View 
+                style={[styles.indicatorDot, { backgroundColor: Colors.light.warning }]} 
               />
               <Text style={styles.breakdownLabel}>Medium Impact</Text>
             </View>
             <Text style={styles.breakdownValue}>{mediumImpactItems.length} items</Text>
           </View>
-
+          
           <View style={styles.breakdownItem}>
             <View style={styles.breakdownIndicator}>
-              <View
-                style={[styles.indicatorDot, { backgroundColor: Colors.light.success }]}
+              <View 
+                style={[styles.indicatorDot, { backgroundColor: Colors.light.success }]} 
               />
               <Text style={styles.breakdownLabel}>Low Impact</Text>
             </View>
@@ -204,21 +191,21 @@ export default function ResultScreen() {
           </View>
         </View>
       </View>
-
+      
       {scan.imageUrl && (
         <View style={styles.imageContainer}>
           <Image source={{ uri: scan.imageUrl }} style={styles.receiptImage} />
         </View>
       )}
-
+      
       <View style={styles.itemsContainer}>
         <Text style={styles.sectionTitle}>Scanned Items</Text>
-
+        
         <View style={styles.itemsHeader}>
           <Text style={styles.itemsHeaderText}>Item</Text>
           <Text style={styles.itemsHeaderText}>Score</Text>
         </View>
-
+        
         <View style={styles.itemsList}>
           {scan.items.length > 0 ? (
             scan.items.map((item, index) => renderItemRow(item, index))
@@ -227,25 +214,25 @@ export default function ResultScreen() {
           )}
         </View>
       </View>
-
+      
       {alternatives.length > 0 && (
         <View style={styles.alternativesContainer}>
           <View style={styles.alternativesHeader}>
-            <Leaf size={20} color={Colors.light.primary} />
+            <Ionicons name="leaf" size={20} color={Colors.light.primary} />
             <Text style={styles.alternativesTitle}>Eco-Friendly Alternatives</Text>
           </View>
-
+          
           {alternatives.map((item, index) => (
             <View key={index} style={styles.alternativeItem}>
               <View style={styles.alternativeItemHeader}>
-                <AlertTriangle size={16} color={Colors.light.error} />
+                <Ionicons name="warning" size={16} color={Colors.light.error} />
                 <Text style={styles.alternativeItemName}>{item.name}</Text>
               </View>
-
+              
               <View style={styles.alternativesList}>
                 {item.alternatives.map((alt, altIndex) => (
                   <View key={altIndex} style={styles.alternativeOption}>
-                    <CheckCircle2 size={16} color={Colors.light.success} />
+                    <Ionicons name="checkmark-circle" size={16} color={Colors.light.success} />
                     <Text style={styles.alternativeOptionText}>{alt}</Text>
                   </View>
                 ))}
@@ -254,17 +241,24 @@ export default function ResultScreen() {
           ))}
         </View>
       )}
-
+      
+      {scan.nearbyStores && scan.nearbyStores.length > 0 && (
+        <NearbyStores 
+          stores={scan.nearbyStores} 
+          userLocation={scan.userLocation}
+        />
+      )}
+      
       {scan.feedback && (
         <View style={styles.feedbackContainer}>
           <View style={styles.feedbackHeader}>
-            <Leaf size={20} color={Colors.light.primary} />
+            <Ionicons name="leaf" size={20} color={Colors.light.primary} />
             <Text style={styles.feedbackTitle}>AI Sustainability Insights</Text>
           </View>
           <Text style={styles.feedbackText}>{scan.feedback}</Text>
         </View>
       )}
-
+      
       <View style={styles.actionsContainer}>
         {!isSaved && currentScan && (
           <Button
@@ -275,7 +269,7 @@ export default function ResultScreen() {
             testID="save-button"
           />
         )}
-
+        
         <Button
           title="Share Results"
           onPress={handleShare}
@@ -283,7 +277,7 @@ export default function ResultScreen() {
           style={styles.actionButton}
           testID="share-button"
         />
-
+        
         <Button
           title="Scan Another Receipt"
           onPress={handleScanAgain}
@@ -320,7 +314,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     color: Colors.light.text,
     marginBottom: 8,
   },
@@ -346,7 +340,7 @@ const styles = StyleSheet.create({
   },
   scoreBreakdownTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.text,
     marginBottom: 16,
   },
@@ -372,7 +366,7 @@ const styles = StyleSheet.create({
   },
   breakdownValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     color: Colors.light.text,
   },
   imageContainer: {
@@ -405,7 +399,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.text,
     marginBottom: 16,
   },
@@ -419,7 +413,7 @@ const styles = StyleSheet.create({
   },
   itemsHeaderText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.gray,
   },
   itemsList: {
@@ -458,7 +452,7 @@ const styles = StyleSheet.create({
   },
   itemScore: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.text,
   },
   noItemsText: {
@@ -484,7 +478,7 @@ const styles = StyleSheet.create({
   },
   alternativesTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.text,
     marginLeft: 8,
   },
@@ -498,7 +492,7 @@ const styles = StyleSheet.create({
   },
   alternativeItemName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     color: Colors.light.text,
     marginLeft: 8,
   },
@@ -539,7 +533,7 @@ const styles = StyleSheet.create({
   },
   feedbackTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: Colors.light.text,
     marginLeft: 8,
   },
