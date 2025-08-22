@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { ScannedItem, ScanResult } from '@/types';
+import { ScannedItem, ScanResult, NearbyStore, LocationResult } from '@/types';
 import { useAuth } from '@/hooks/auth-store';
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
@@ -44,10 +44,12 @@ export const [ScanProvider, useScan] = createContextHook(() => {
         totalScore: sanitizedScore,
         imageUrl: scanResult.imageUrl,
         feedback: scanResult.feedback,
+        nearbyStores: scanResult.nearbyStores,
+        userLocation: scanResult.userLocation,
         createdAt: new Date().toISOString(),
       };
       
-      const dbScan = {
+      const dbScan: any = {
         user_id: user.id,
         items: scanResult.items,
         total_score: sanitizedScore, 
@@ -55,6 +57,14 @@ export const [ScanProvider, useScan] = createContextHook(() => {
         feedback: scanResult.feedback,
         created_at: new Date().toISOString(),
       };
+      
+
+      if (scanResult.nearbyStores) {
+        dbScan.nearby_stores = scanResult.nearbyStores;
+      }
+      if (scanResult.userLocation) {
+        dbScan.user_location = scanResult.userLocation;
+      }
       
       const { data, error } = await supabase
         .from('scan_results')
@@ -123,6 +133,8 @@ export const [ScanProvider, useScan] = createContextHook(() => {
         totalScore: currentScan.totalScore,
         imageUrl: currentScan.imageUrl,
         feedback: currentScan.feedback,
+        nearbyStores: currentScan.nearbyStores,
+        userLocation: currentScan.userLocation,
       });
       
       setCurrentScan(null);
@@ -150,7 +162,14 @@ export const [ScanProvider, useScan] = createContextHook(() => {
     }
   };
 
-  const setNewScanResult = (items: ScannedItem[], totalScore: number, imageUrl?: string, feedback?: string) => {
+  const setNewScanResult = (
+    items: ScannedItem[], 
+    totalScore: number, 
+    imageUrl?: string, 
+    feedback?: string,
+    nearbyStores?: NearbyStore[],
+    userLocation?: LocationResult
+  ) => {
     if (!user) return;
     
     const newScan: ScanResult = {
@@ -160,6 +179,8 @@ export const [ScanProvider, useScan] = createContextHook(() => {
       totalScore,
       imageUrl,
       feedback,
+      nearbyStores,
+      userLocation,
       createdAt: new Date().toISOString(),
     };
     
